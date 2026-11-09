@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>心理年龄测试</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5c6b73',
+                        secondary: '#9db4c0',
+                        light: '#f7f9fa',
+                        dark: '#273036'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 10px 30px rgba(92, 107, 115, 0.08);
+            }
+            .option-hover {
+                transition: all 0.25s ease;
+            }
+            .option-hover:hover {
+                transform: translateY(-2px);
+            }
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+    </style>
+</head>
+<body class="bg-light text-dark font-sans min-h-screen">
+    <div class="max-w-xl mx-auto px-4 py-8">
+        <!-- 首页 -->
+        <div id="start-page" class="block">
+            <div class="bg-white rounded-2xl p-8 card-shadow">
+                <h1 class="text-[clamp(1.8rem,5vw,2.4rem)] font-medium text-primary text-center mb-4">心理年龄测试</h1>
+                <p class="text-gray-500 text-center mb-8 leading-relaxed">
+                    心理年龄，代表你内心成熟的状态，和实际年龄不一定相同。<br>
+                    共30道选择题，请凭第一直觉选择答案，答案没有对错之分。
+                </p>
+                <div class="mb-6">
+                    <label class="block text-sm text-gray-600 mb-2">你的实际年龄</label>
+                    <input type="number" id="realAge" min="10" max="80" value="25"
+                        class="w-full border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-secondary/40">
+                </div>
+                <button onclick="startTest()"
+                    class="w-full bg-primary text-white py-3 rounded-lg option-hover font-medium">
+                    开始测试
+                </button>
+                <p class="text-xs text-gray-400 mt-4 text-center">所有数据仅保存在你的设备本地，不会上传</p>
+            </div>
+        </div>
+
+        <!-- 答题页面 -->
+        <div id="quiz-page" class="hidden">
+            <div class="bg-white rounded-2xl p-6 card-shadow">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-sm text-gray-500">进度</span>
+                    <span id="progressText" class="text-sm text-primary font-medium">0 / 30</span>
+                </div>
+                <div class="w-full bg-gray-100 rounded-full h-1.5 mb-8">
+                    <div id="progressBar" class="bg-secondary h-1.5 rounded-full transition-all duration-300" style="width:0%"></div>
+                </div>
+                <div id="questionBox"></div>
+                <div class="flex gap-3 mt-8">
+                    <button onclick="prevQuestion()" id="prevBtn"
+                        class="flex-1 py-2.5 border border-gray-200 rounded-lg text-gray-500 option-hover hidden">
+                        上一题
+                    </button>
+                    <button onclick="nextQuestion()" id="nextBtn"
+                        class="flex-1 py-2.5 bg-primary text-white rounded-lg option-hover">
+                        下一题
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 结果页 -->
+        <div id="result-page" class="hidden">
+            <div class="bg-white rounded-2xl p-8 card-shadow">
+                <h2 class="text-xl font-medium text-primary text-center mb-6">你的测试结果</h2>
+                <div class="text-center mb-8">
+                    <div class="inline-block px-6 py-4 bg-light rounded-xl">
+                        <p class="text-gray-500 mb-1">你的心理年龄</p>
+                        <p id="mentalAgeResult" class="text-[clamp(2rem,8vw,3rem)] font-bold text-primary">--</p>
+                        <p id="diffText" class="text-sm text-gray-500 mt-2"></p>
+                    </div>
+                </div>
+                <div class="border-t border-gray-100 pt-6">
+                    <h3 class="font-medium mb-3">📄 心理分析报告</h3>
+                    <div id="analysisText" class="text-gray-600 leading-relaxed text-sm"></div>
+                </div>
+                <button onclick="restart()"
+                    class="w-full mt-8 py-3 bg-primary text-white rounded-lg option-hover">
+                    重新测试
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 30道测试题目
+        const questions = [
+            { q: "周末空闲的时候，你更愿意？", o: ["和很多朋友聚会热闹一下", "约一两个好友小聚", "自己安静做点喜欢的事", "不确定，看心情"] },
+            { q: "遇到计划被突然打乱，你的第一反应？", o: ["烦躁，很不适应", "有点不舒服，但可以调整", "坦然接受，随机应变", "先发呆一会再说"] },
+            { q: "别人对你提出批评时，你通常？", o: ["立刻感到委屈、想反驳", "心里不舒服，慢慢消化", "冷静思考对方说的是否合理", "表面附和，内心不在意"] },
+            { q: "想到未来，你更多感受是？", o: ["充满期待，觉得一切皆有可能", "有期待也有一点不安", "觉得未来平平淡淡就很好", "经常感到焦虑迷茫"] },
+            { q: "做决定的时候，你习惯？", o: ["凭直觉快速决定", "询问朋友建议再选", "权衡利弊，谨慎思考", "拖延，不想做选择"] },
+            { q: "看到身边人比你优秀，你会？", o: ["羡慕，有点嫉妒", "把对方当成目标努力", "平常心，每个人节奏不同", "觉得无所谓"] },
+            { q: "独处很长一段时间，你会？", o: ["非常孤单，想找人陪伴", "有点无聊，想找人聊天", "很享受独处的时光", "偶尔孤单，偶尔舒服"] },
+            { q: "回忆过去，你常常？", o: ["怀念过去，觉得以前更好", "偶尔想起美好的片段", "很少回头看，专注当下", "容易为过去遗憾自责"] },
+            { q: "一件事情搞砸了，你首先？", o: ["自责很久，情绪低落", "难过一会，然后想补救", "冷静复盘哪里出错", "不想面对，逃避问题"] },
+            { q: "你对于新鲜事物（新潮流、新玩法）？", o: ["非常感兴趣，主动尝试", "感兴趣，但不会跟风", "兴趣一般，随缘了解", "不太喜欢新鲜变化"] },
+            { q: "和人发生矛盾之后，你一般？", o: ["希望马上和好", "冷静一段时间再沟通", "理性沟通解决问题", "不想沟通，慢慢疏远"] },
+            { q: "你看待金钱，觉得？", o: ["开心最重要，不必存钱", "够用就行，开心优先", "合理规划，为以后储备", "赚钱是最重要的事"] },
+            { q: "压力大的时候，你会？", o: ["找人倾诉发泄情绪", "看剧、吃美食放松", "自己消化，默默扛着", "放任自己摆烂"] },
+            { q: "你是否经常幻想浪漫或者戏剧性的故事？", o: ["经常，很喜欢想象", "偶尔会幻想", "很少，比较现实", "几乎不会"] },
+            { q: "面对陌生人，你？", o: ["主动热情搭话", "对方主动才会交流", "保持礼貌距离", "有点紧张回避"] },
+            { q: "你认为犯错是？", o: ["很丢脸的事情", "难免的，吸取教训", "正常的成长过程", "尽量不要犯错"] },
+            { q: "你更喜欢哪种生活节奏？", o: ["丰富多变，充满惊喜", "张弛有度，有松有紧", "稳定规律，日复一日", "悠闲慢节奏，越少事越好"] },
+            { q: "别人向你倾诉烦恼，你通常？", o: ["跟着对方一起难过", "安慰对方，给情绪支持", "帮对方分析解决办法", "不知道怎么回应"] },
+            { q: "你会不会在意别人对你的看法？", o: ["非常在意，容易受影响", "比较在意，但有自己想法", "适度参考，不为别人活", "完全不在乎别人眼光"] },
+            { q: "如果可以回到过去，你想？", o: ["回到无忧无虑的时候", "修正曾经做错的选择", "不想回去，现在就很好", "不确定"] },
+            { q: "当目标很难完成，你会？", o: ["直接放弃，换简单的事", "坚持一阵子不行就放弃", "拆分目标，慢慢推进", "死磕到底，绝不认输"] },
+            { q: "你相信一见钟情吗？", o: ["完全相信，很浪漫", "半信半疑，看缘分", "感情需要慢慢了解培养", "不相信"] },
+            { q: "日常生活中，你容易被小事感动吗？", o: ["很容易被打动", "看到温暖的事会触动", "很少被小事打动", "几乎很难共情"] },
+            { q: "你怎么看待承诺？", o: ["承诺一定要兑现", "尽力做到，意外可以谅解", "口头承诺不必当真", "很少给别人承诺"] },
+            { q: "排队等待的时候，你？", o: ["很不耐烦，容易烦躁", "刷刷手机打发时间", "安静等待，习以为常", "能不排队就避开"] },
+            { q: "你对自己的接纳程度？", o: ["经常嫌弃自己不够好", "有优点也有缺点，时而自信", "接纳不完美的自己", "习惯降低期待保护自己"] },
+            { q: "如果有机会冒险体验（跳伞、徒步），你？", o: ["超级想要尝试", "有点心动但是害怕", "不太感兴趣", "绝对不会尝试"] },
+            { q: "你会经常规划未来几年的生活吗？", o: ["很少规划，走一步看一步", "会有简单的想法", "有清晰长期规划", "规划了也很难执行"] },
+            { q: "你觉得眼泪是？", o: ["想哭就哭，不用克制", "私下哭，不在人前落泪", "尽量控制情绪不哭", "流泪代表脆弱"] },
+            { q: "整体来说，你看待世界的底色偏向？", o: ["温柔浪漫，相信美好", "有好有坏，保持期待", "现实客观，好坏并存", "偏悲观，容易看到难处"] }
+        ];
+
+        // 每个选项对应的分数
+        const scoreMap = [3, 2, 1, 0];
+        let current = 0;
+        let answers = Array(questions.length).fill(null);
+        let realAge = 25;
+
+        // 页面切换
+        function showPage(id) {
+            document.querySelectorAll('#start-page,#quiz-page,#result-page').forEach(el=>el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        function startTest() {
+            realAge = parseInt(document.getElementById('realAge').value) || 25;
+            current = 0;
+            answers.fill(null);
+            renderQuestion();
+            showPage('quiz-page');
+        }
+
+        function renderQuestion() {
+            const item = questions[current];
+            const box = document.getElementById('questionBox');
+            box.innerHTML = `
+                <p class="text-lg font-medium mb-6">${current+1}. ${item.q}</p>
+                <div class="space-y-3">
+                    ${item.o.map((opt,idx)=>`
+                        <div onclick="selectAnswer(${idx})" class="option-item option-hover border rounded-lg p-4 cursor-pointer ${answers[current]===idx?'border-secondary bg-secondary/10':'border-gray-100'}">
+                            ${opt}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            document.getElementById('progressText').innerText = `${current+1} / 30`;
+            document.getElementById('progressBar').style.width = ((current+1)/30*100)+'%';
+            document.getElementById('prevBtn').classList.toggle('hidden', current===0);
+            document.getElementById('nextBtn').innerText = current === questions.length -1 ? "查看结果" : "下一题";
+        }
+
+        function selectAnswer(idx) {
+            answers[current] = idx;
+            renderQuestion();
+        }
+
+        function nextQuestion() {
+            if(answers[current] === null) {
+                alert("请选择一个答案");
+                return;
+            }
+            if(current < questions.length -1) {
+                current++;
+                renderQuestion();
+            } else {
+                calcResult();
+                showPage('result-page');
+            }
+        }
+        function prevQuestion() {
+            if(current > 0) {
+                current--;
+                renderQuestion();
+            }
+        }
+
+        function calcResult() {
+            let total = 0;
+            answers.forEach((v)=>{
+                total += scoreMap[v];
+            })
+            // 总分范围：0~90，映射心理年龄12~60岁
+            const mentalAge = Math.round(12 + (total / 90) * 48);
+            const diff = mentalAge - realAge;
+            document.getElementById('mentalAgeResult').innerText = mentalAge + " 岁";
+            let diffStr = "";
+            let analysis = "";
+            if(diff > 5) {
+                diffStr = `心理年龄比实际年龄大 ${diff} 岁`;
+                analysis = `你的内心成熟度高于当下的实际年龄。
+你看待问题偏向理性克制，不容易冲动，习惯提前考虑风险，遇事更愿意自己消化情绪，承担责任。
+你拥有很强的共情力，能看懂人情世故，很少抱有不切实际的幻想，懂得接纳生活里的遗憾和不完美。
+但需要留意一点：成熟的外壳有时候会让你习惯性压抑自己，你常常优先照顾别人感受，忽略自己内心的需求。适当允许自己放松、任性，不必时刻强迫自己懂事。`;
+            } else if(diff >= -5 && diff <=5) {
+                diffStr = `心理年龄和实际年龄基本一致`;
+                analysis = `你的心理年龄和真实年龄匹配度很高，心智处在非常平衡健康的状态。
+你兼具这个年纪该有的活力与稳重：对新鲜事物保有好奇心，同时具备基础的抗压能力，遇到麻烦可以理性处理。
+你不会过度理想化，也不会变得消极麻木，情绪弹性很好，可以在感性和理性之间找到平衡点。
+你能够接纳自己的情绪，难过的时候可以释放，该坚持的时候也足够清醒。继续保持这份松弛，顺着自己的节奏成长就很好。`;
+            } else if(diff < -5) {
+                diffStr = `心理年龄比实际年龄小 ${Math.abs(diff)} 岁`;
+                analysis = `你的内心依旧保留着难得的童真，心理成熟度低于实际年龄。
+你内心浪漫敏感，相信美好，很容易被小事治愈，讨厌复杂的人情世故，不喜欢沉重的压力和算计。
+你愿意相信他人，想象力丰富，对世界抱有热烈的期待。这是非常珍贵的特质。
+但在现实生活里，你更容易受到挫折打击，遇到冲突和压力时容易逃避、情绪内耗。
+建议慢慢建立内心的保护层：保留心底的柔软，同时学着建立边界，学会独立处理难题，保护好自己这份纯粹。`;
+            }
+            document.getElementById('diffText').innerText = diffStr;
+            document.getElementById('analysisText').innerText = analysis;
+        }
+
+        function restart() {
+            showPage('start-page');
+        }
+    </script>
+</body>
+</html>
